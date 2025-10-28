@@ -6,7 +6,9 @@ A lightweight finance dashboard built with **React**, **Vite**, and **Tailwind C
 
 ---
 
-![MarketPulse Mini Screenshot](market-pulse.png)
+<p align="center">
+  <img src="market-pulse.png" alt="MarketPulse Mini Screenshot" width="800"/>
+</p>
 
 ---
 
