@@ -110,54 +110,84 @@ export default function App() {
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight">MarketPulse Mini</h1>
-          <span
-            className={`text-xs px-2 py-1 rounded-full border ${
-              live
-                ? "bg-green-50 text-green-700 border-green-200"
-                : "bg-yellow-50 text-yellow-700 border-yellow-200"
-            }`}
-          >
-            {live ? "LIVE DATA ON" : "MOCK MODE"}
-          </span>
-        </div>
+<header className="space-y-3 sm:space-y-4">
+  {/* Title + live badge (stack on mobile) */}
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+    <div className="flex items-center gap-3">
+      <h1 className="text-3xl sm:text-2xl font-extrabold tracking-tight leading-tight">
+        MarketPulse <span className="sm:hidden block" />Mini
+      </h1>
+      <span
+        className={`text-[11px] sm:text-xs px-2.5 py-1 rounded-full border
+          ${live
+            ? "bg-green-50 text-green-700 border-green-200"
+            : "bg-yellow-50 text-yellow-700 border-yellow-200"}`}
+      >
+        {live ? "LIVE DATA ON" : "MOCK MODE"}
+      </span>
+    </div>
 
-        <div className="flex items-center gap-2">
-          {MOCK_TICKERS.map((t) => (
-            <button
-              key={t.symbol}
-              onClick={() => toggle(t.symbol)}
-              className={`px-3 py-1 rounded-full border text-sm transition ${
-                symbols.includes(t.symbol)
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white text-gray-700 border-gray-200 hover:shadow"
-              }`}
-            >
-              {t.symbol}
-            </button>
-          ))}
-          <button
-            onClick={toggleLive}
-            className={`ml-3 px-3 py-1 rounded-full text-sm border transition ${
-              live
-                ? "bg-green-600 text-white border-green-600"
-                : "bg-white text-gray-700 border-gray-200 hover:shadow"
-            }`}
-            title="Toggle live API requests"
-          >
-            {live ? "Turn Live OFF" : "Turn Live ON"}
-          </button>
-          <button
-            onClick={refreshAll}
-            className="ml-2 px-3 py-1 rounded-full text-sm border bg-white text-gray-700 hover:shadow"
-            title="Bypass cache and fetch fresh quotes"
-          >
-            Refresh now
-          </button>
-        </div>
-      </header>
+    {/* Actions that shouldn't wrap (live toggle / refresh) on wider screens */}
+    <div className="hidden sm:flex items-center gap-2">
+      <button
+        onClick={toggleLive}
+        className={`px-3 py-1 rounded-full text-sm border transition
+          ${live ? "bg-green-600 text-white border-green-600"
+                 : "bg-white text-gray-700 border-gray-200 hover:shadow"}`}
+        title="Toggle live API requests"
+      >
+        {live ? "Turn Live OFF" : "Turn Live ON"}
+      </button>
+      <button
+        onClick={() => location.reload()}
+        className="px-3 py-1 rounded-full text-sm border bg-white text-gray-700 border-gray-200 hover:shadow"
+      >
+        Refresh now
+      </button>
+    </div>
+  </div>
+
+  {/* Ticker chips: horizontally scrollable on mobile, wrap on md+ */}
+  <div className="relative -mx-4 sm:mx-0">
+    <div className="
+        flex gap-2 px-4 sm:px-0 py-1
+        overflow-x-auto scrollbar-none
+        sm:flex-wrap sm:overflow-visible
+      ">
+      {MOCK_TICKERS.map((t) => (
+        <button
+          key={t.symbol}
+          onClick={() => toggle(t.symbol)}
+          className={`whitespace-nowrap rounded-full border transition
+            px-3 py-1 text-xs sm:text-sm
+            ${symbols.includes(t.symbol)
+              ? "bg-blue-600 text-white border-blue-600"
+              : "bg-white text-gray-700 border-gray-200 hover:shadow"}`}
+        >
+          {t.symbol}
+        </button>
+      ))}
+
+      {/* Live toggle & refresh visible inside scroller on mobile */}
+      <div className="flex sm:hidden items-center gap-2 pl-1">
+        <button
+          onClick={toggleLive}
+          className={`px-3 py-1 rounded-full text-xs border transition
+            ${live ? "bg-green-600 text-white border-green-600"
+                   : "bg-white text-gray-700 border-gray-200 hover:shadow"}`}
+        >
+          {live ? "Turn Live OFF" : "Turn Live ON"}
+        </button>
+        <button
+          onClick={() => location.reload()}
+          className="px-3 py-1 rounded-full text-xs border bg-white text-gray-700 border-gray-200 hover:shadow"
+        >
+          Refresh now
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
 
       {!hasKey && (
         <div className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg p-2">

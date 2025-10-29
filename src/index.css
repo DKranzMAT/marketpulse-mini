@@ -3,3 +3,8 @@
 :root { color-scheme: light dark; }
 html, body, #root { height: 100%; }
 body { @apply bg-gray-50 text-gray-900; }
+
+/* Hide horizontal scrollbar but keep scrollability */
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+
