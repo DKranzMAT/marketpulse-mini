@@ -1,0 +1,25 @@
+/* LIGHT THEME (default) */
+html.light {
+  --bg: #ffffff;
+  --fg: #0f172a;
+
+  --card-bg: #ffffff;
+  --card-fg: #0f172a;
+  --card-border: #e2e8f0;
+
+  --chip-on: #2563eb;     /* blue-600 */
+  --chip-off: #e5e7eb;    /* gray-200 */
+}
+
+/* DARK THEME */
+html.dark {
+  --bg: #0f172a;          /* slate-900 */
+  --fg: #f1f5f9;          /* slate-100 */
+
+  --card-bg: #1e293b;     /* slate-800 */
+  --card-fg: #f1f5f9;
+  --card-border: #475569; /* slate-600 */
+
+  --chip-on: #3b82f6;
+  --chip-off: #334155;
+}

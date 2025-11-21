@@ -6,11 +6,15 @@ import PriceCard from "./components/PriceCard.jsx";
 import Sparkline from "./components/Sparkline.jsx";
 import { getQuote, clearAllQuoteCaches } from "./lib/alpha.js";
 
-// ⏰ Small time formatter for “Last updated”
+import { LIGHT, DARK } from "./theme.js";
+
+// Format timestamp → "12:34 PM"
 const fmtTime = (ts) =>
   ts ? new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
 
-// ---- mock price loop (keeps free sparklines) ----
+// -------------------------------------------
+// Mock sparkline price generator
+// -------------------------------------------
 function useMockPrices(symbols) {
   const [ticks, setTicks] = useState(() =>
     symbols.reduce((acc, s) => {
@@ -29,15 +33,17 @@ function useMockPrices(symbols) {
       setTicks((prev) => {
         const next = { ...prev };
         symbols.forEach((s) => {
-          const cur = next[s] || { price: 120, change: 0, series: [{ t: 0, v: 120 }] };
+          const cur = next[s];
           const drift = (Math.random() - 0.5) * 0.8;
           const price = Math.max(1, cur.price * (1 + drift / 100));
-          const base = cur.series[0]?.v ?? price;
+          const base = cur.series[0].v;
           const change = ((price - base) / base) * 100;
+
           const series = [
             ...cur.series.slice(-29),
-            { t: (cur.series.at(-1)?.t ?? 0) + 1, v: price },
+            { t: cur.series.at(-1).t + 1, v: price },
           ];
+
           next[s] = { price, change, series };
         });
         return next;
@@ -50,9 +56,15 @@ function useMockPrices(symbols) {
   return [ticks, setTicks];
 }
 
+// -------------------------------------------
+// MAIN APP
+// -------------------------------------------
 export default function App() {
   const { symbols, toggle } = useWatchlist();
-  const { live, toggleLive } = useSettings();
+  const { live, toggleLive, darkMode, toggleDark } = useSettings();
+
+  const theme = darkMode ? DARK : LIGHT;
+
   const [ticks, setTicks] = useMockPrices(symbols);
 
   const all = useMemo(() => {
@@ -60,149 +72,146 @@ export default function App() {
     return symbols.map((s) => ({ symbol: s, name: map.get(s)?.name ?? s }));
   }, [symbols]);
 
-  // 💬 Overlay live quotes when Live mode is ON
+  // Live API hydration
   useEffect(() => {
-    if (!live) return; // mock mode only
+    if (!live) return;
     let cancelled = false;
 
     async function hydrate() {
       for (let i = 0; i < symbols.length; i++) {
         const s = symbols[i];
-        await new Promise((r) => setTimeout(r, 1200 * i)); // stagger calls
+        await new Promise((r) => setTimeout(r, 1200 * i));
         const q = await getQuote(s);
-        if (cancelled || !q) continue;
-        setTicks((prev) => {
-          const cur = prev[s];
-          if (!cur) return prev;
-          const next = { ...prev };
-          next[s] = { ...cur, price: q.price, change: q.changePct, asOf: q.asOf };
-          return next;
-        });
+        if (!q || cancelled) continue;
+
+        setTicks((prev) => ({
+          ...prev,
+          [s]: { ...prev[s], price: q.price, change: q.changePct, asOf: q.asOf },
+        }));
       }
     }
 
     hydrate();
-    return () => {
-      cancelled = true;
-    };
-  }, [symbols, live, setTicks]);
+    return () => (cancelled = true);
+  }, [symbols, live]);
 
-  // 🔄 Manual refresh (clears cache + refetches)
   async function refreshAll() {
     clearAllQuoteCaches();
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i];
-      await new Promise((r) => setTimeout(r, 600 * i)); // gentle stagger
+      await new Promise((r) => setTimeout(r, 600 * i));
       const q = await getQuote(s);
       if (!q) continue;
-      setTicks((prev) => {
-        const cur = prev[s];
-        if (!cur) return prev;
-        return {
-          ...prev,
-          [s]: { ...cur, price: q.price, change: q.changePct, asOf: q.asOf },
-        };
-      });
+
+      setTicks((prev) => ({
+        ...prev,
+        [s]: { ...prev[s], price: q.price, change: q.changePct, asOf: q.asOf },
+      }));
     }
   }
 
   const hasKey = Boolean(import.meta.env.VITE_ALPHA_VANTAGE_KEY);
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
-<header className="space-y-3 sm:space-y-4">
-  {/* Title + live badge (stack on mobile) */}
-  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-    <div className="flex items-center gap-3">
-      <h1 className="text-3xl sm:text-2xl font-extrabold tracking-tight leading-tight">
-        MarketPulse <span className="sm:hidden block" />Mini
-      </h1>
-      <span
-        className={`text-[11px] sm:text-xs px-2.5 py-1 rounded-full border
-          ${live
-            ? "bg-green-50 text-green-700 border-green-200"
-            : "bg-yellow-50 text-yellow-700 border-yellow-200"}`}
-      >
-        {live ? "LIVE DATA ON" : "MOCK MODE"}
-      </span>
-    </div>
+    <div
+      style={{
+        background: theme.bg,
+        color: theme.text,
+        minHeight: "100vh",
+        padding: "24px",
+        transition: "background 0.3s ease, color 0.3s ease",
+      }}
+      className="max-w-6xl mx-auto space-y-6"
+    >
+      {/* Header */}
+      <header className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-extrabold">MarketPulse Mini</h1>
+            <span
+              style={{
+                fontSize: "11px",
+                padding: "4px 10px",
+                borderRadius: "9999px",
+                background: live ? "#bbf7d0" : "#fde68a",
+                color: live ? "#064e3b" : "#78350f",
+                border: "1px solid rgba(0,0,0,0.1)",
+              }}
+            >
+              {live ? "LIVE DATA ON" : "MOCK MODE"}
+            </span>
+          </div>
 
-    {/* Actions that shouldn't wrap (live toggle / refresh) on wider screens */}
-    <div className="hidden sm:flex items-center gap-2">
-      <button
-        onClick={toggleLive}
-        className={`px-3 py-1 rounded-full text-sm border transition
-          ${live ? "bg-green-600 text-white border-green-600"
-                 : "bg-white text-gray-700 border-gray-200 hover:shadow"}`}
-        title="Toggle live API requests"
-      >
-        {live ? "Turn Live OFF" : "Turn Live ON"}
-      </button>
-      <button
-        onClick={() => location.reload()}
-        className="px-3 py-1 rounded-full text-sm border bg-white text-gray-700 border-gray-200 hover:shadow"
-      >
-        Refresh now
-      </button>
-    </div>
-  </div>
+          {/* Desktop controls */}
+          <div className="hidden sm:flex items-center gap-2">
+            <button onClick={toggleLive} className="px-3 py-1 rounded-full border">
+              {live ? "Turn Live OFF" : "Turn Live ON"}
+            </button>
 
-  {/* Ticker chips: horizontally scrollable on mobile, wrap on md+ */}
-  <div className="relative -mx-4 sm:mx-0">
-    <div className="
-        flex gap-2 px-4 sm:px-0 py-1
-        overflow-x-auto scrollbar-none
-        sm:flex-wrap sm:overflow-visible
-      ">
-      {MOCK_TICKERS.map((t) => (
-        <button
-          key={t.symbol}
-          onClick={() => toggle(t.symbol)}
-          className={`whitespace-nowrap rounded-full border transition
-            px-3 py-1 text-xs sm:text-sm
-            ${symbols.includes(t.symbol)
-              ? "bg-blue-600 text-white border-blue-600"
-              : "bg-white text-gray-700 border-gray-200 hover:shadow"}`}
-        >
-          {t.symbol}
-        </button>
-      ))}
+            <button onClick={refreshAll} className="px-3 py-1 rounded-full border">
+              Refresh
+            </button>
 
-      {/* Live toggle & refresh visible inside scroller on mobile */}
-      <div className="flex sm:hidden items-center gap-2 pl-1">
-        <button
-          onClick={toggleLive}
-          className={`px-3 py-1 rounded-full text-xs border transition
-            ${live ? "bg-green-600 text-white border-green-600"
-                   : "bg-white text-gray-700 border-gray-200 hover:shadow"}`}
-        >
-          {live ? "Turn Live OFF" : "Turn Live ON"}
-        </button>
-        <button
-          onClick={() => location.reload()}
-          className="px-3 py-1 rounded-full text-xs border bg-white text-gray-700 border-gray-200 hover:shadow"
-        >
-          Refresh now
-        </button>
-      </div>
-    </div>
-  </div>
-</header>
+            <button onClick={toggleDark} className="px-3 py-1 rounded-full border">
+              {darkMode ? "Light" : "Dark"}
+            </button>
+          </div>
+        </div>
+
+        {/* Tickers */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {MOCK_TICKERS.map((t) => (
+            <button
+              key={t.symbol}
+              onClick={() => toggle(t.symbol)}
+              className="whitespace-nowrap rounded-full px-4 py-2 border"
+              style={{
+                background: symbols.includes(t.symbol) ? "#2563eb" : theme.card,
+                borderColor: theme.cardBorder,
+                color: symbols.includes(t.symbol) ? "#fff" : theme.text,
+              }}
+            >
+              {t.symbol}
+            </button>
+          ))}
+        </div>
+
+        {/* Mobile controls */}
+        <div className="flex sm:hidden gap-2">
+          <button onClick={toggleLive} className="flex-1 px-3 py-1 rounded-full border">
+            {live ? "Turn Live OFF" : "Turn Live ON"}
+          </button>
+
+          <button onClick={refreshAll} className="flex-1 px-3 py-1 rounded-full border">
+            Refresh
+          </button>
+
+          <button onClick={toggleDark} className="px-3 py-1 rounded-full border">
+            {darkMode ? "☀️" : "🌙"}
+          </button>
+        </div>
+      </header>
 
       {!hasKey && (
-        <div className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg p-2">
-          No API key detected — staying in mock mode. Add <code>.env</code> with{" "}
-          <code>VITE_ALPHA_VANTAGE_KEY</code>.
+        <div style={{ background: "#fef9c3", padding: "8px", borderRadius: "6px" }}>
+          No API key detected — mock mode only.
         </div>
       )}
 
+      {/* GRID */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {all.map(({ symbol, name }) => {
           const p = ticks[symbol];
           return (
             <div
               key={symbol}
-              className="rounded-2xl border bg-white p-4 shadow-sm space-y-3"
+              style={{
+                background: theme.card,
+                color: theme.text,
+                border: `1px solid ${theme.cardBorder}`,
+                borderRadius: "16px",
+                padding: "16px",
+              }}
             >
               <PriceCard
                 symbol={symbol}
@@ -210,11 +219,12 @@ export default function App() {
                 price={p?.price ?? 0}
                 change={p?.change ?? 0}
               />
+
               <Sparkline data={p?.series ?? []} />
+
               {p?.asOf && (
-                <div className="text-[11px] text-gray-500">
-                  Last updated:{" "}
-                  <span className="font-medium">{fmtTime(p.asOf)}</span>
+                <div style={{ fontSize: "11px", opacity: 0.7 }}>
+                  Last updated: {fmtTime(p.asOf)}
                 </div>
               )}
             </div>
@@ -222,8 +232,8 @@ export default function App() {
         })}
       </section>
 
-      <footer className="text-xs text-gray-500">
-        Quotes overlay live when enabled; sparklines are mock to keep it free.
+      <footer style={{ fontSize: "12px", opacity: 0.7 }}>
+        Quotes overlay live when enabled; sparklines remain mock.
       </footer>
     </div>
   );
