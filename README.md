@@ -16,7 +16,7 @@ A lightweight finance dashboard built with **React**, **Vite**, and **Tailwind C
 - ⚡ Instant mock price simulation (keeps sparklines free)
 - 📈 Live price overlay via [Alpha Vantage API](https://www.alphavantage.co/)
 - 💾 Local watchlist storage using Zustand
-- 🎨 Clean UI with Tailwind and responsive grid
+- 🎨 Clean UI with Tailwind and responsive grid plus a dark mode toggle
 - 🧠 Built and deployed via GitHub Actions to GitHub Pages
 
 ---
