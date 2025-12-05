@@ -53,7 +53,7 @@ VITE_ALPHA_VANTAGE_KEY=your_api_key_here
 
 ---
 
-### 🌐 Live Demo
+### 🌐 Live Demo - Enjoy!
 **👉 [https://dkranzmat.github.io/marketpulse-mini/](https://dkranzmat.github.io/marketpulse-mini/)**
 
 ---
